@@ -1,0 +1,22 @@
+$numPlanes: 2;
+$numEl: 4;
+
+.ElSphere {
+    width: 100%;
+    height: 100%;
+}
+
+// @for $i from 1 through $numEl {
+//     .sphere-element:nth-child(#{$i}) {
+//         transform: rotateZ(#{$i * (180 / $numEl - 10)}deg);
+//     }
+// }
+
+@keyframes gira {
+    0% {
+        transform: rotate3d(1,1,1,-360deg);
+    }
+    100% {
+        transform: rotate3d(0,0,0,360deg);
+    }
+}
