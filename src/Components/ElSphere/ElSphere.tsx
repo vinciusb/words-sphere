@@ -1,12 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useReducer } from 'react';
 import styled from 'styled-components';
 import { AfterInterface, Angles, SphereElementInterface, SphereFaceInterface, SphereInterface } from './interfaces';
 import './ElSphere.scss';
 
-const NUM_PLANES = 2,
-    NUM_EL_PER_PLANE = 4;
+const NUM_PLANES = 4,
+    NUM_EL_PER_PLANE = 8;
 
 const elements = [...Array(NUM_PLANES * NUM_EL_PER_PLANE)].map((_) => Math.floor(Math.random() * 20));
+
+const toRad = (deg: number) => (deg / 180) * Math.PI;
 
 const Styled = {
     Sphere: styled.div.attrs<SphereInterface>(({ angles }) => ({
@@ -31,9 +33,8 @@ const Styled = {
         right: 0;
         transform-style: preserve-3d;
         transform: ${(props) => `rotateY(${props.planeAngle}deg)`};
-        /* opacity: 1; */
     `,
-    SphereEl: styled.div.attrs<SphereElementInterface>(({ opacity, planeAngle, insideAngle }) => ({
+    SphereEl: styled.div.attrs<SphereElementInterface>(({ opacity, insideAngle }) => ({
         style: {
             transform: `rotateZ(${insideAngle}deg)`,
             borderColor: `rgb(255, 255, 255, ${opacity})`,
@@ -52,9 +53,10 @@ const Styled = {
         font: bold;
         color: rgb(255, 255, 255);
     `,
-    After: styled.div.attrs<AfterInterface>(({ opacity }) => ({
+    After: styled.div.attrs<AfterInterface>(({ opacity, insideAngle }) => ({
         style: {
             opacity: opacity,
+            // transform: `scale(-1, 1) rotateX(90deg) rotateY(180deg) rotateZ(${-insideAngle}deg)`,
         },
     }))<AfterInterface>`
         font-size: 30px;
@@ -62,19 +64,31 @@ const Styled = {
         background-color: rgb(194, 24, 24);
         height: 15px;
         width: 15px;
-        border-radius: 50%;
         display: inline-block;
         top: 0;
         left: 0;
-        transform: scale(-1, 1) rotateX(90deg) rotateZ(90deg);
+        transform-style: preserve-3d;
         user-select: none;
+        transform: scale(-1, 1) rotateX(90deg) rotateY(180deg) rotateZ(270deg);
     `,
 };
 
 const ElSphere: React.FC = () => {
     const renderCountRef = useRef(0);
+
     const [mouseState, setMouseState] = useState(false);
-    const [angles, setAngles] = useState<Angles>({ x: 0, y: 0 });
+    const [angles, setAngles] = useReducer(
+        (state: Angles, action: Angles) => {
+            const newX = state.x + action.x;
+            const newY = state.y - action.y;
+
+            return {
+                x: Math.abs(newX) > 360 ? 0 : newX,
+                y: Math.abs(newY) > 360 ? 0 : newY,
+            };
+        },
+        { x: 0, y: 0 },
+    );
 
     const handleMouseClick = (e: React.MouseEvent) => {
         switch (e.type) {
@@ -96,14 +110,8 @@ const ElSphere: React.FC = () => {
                 renderCountRef.current = 0;
 
                 const { movementX, movementY } = e;
-                const newX = angles.x - movementX;
-                const newY = angles.y - movementY;
-                // console.log('X:' + newX + ' ' + newY);
 
-                setAngles({
-                    x: Math.abs(newX) > 360 ? 0 : newX,
-                    y: Math.abs(newY) > 360 ? 0 : newY,
-                });
+                setAngles({ x: movementX, y: movementY });
             }
         }
     };
@@ -115,22 +123,18 @@ const ElSphere: React.FC = () => {
         // Create each plane
         for (let i = 0; i < NUM_PLANES; i++) {
             const ang = i * (360 / NUM_PLANES);
-            const opacity = (1 - Math.sin(((ang - angles.x) / 180) * Math.PI)) / 2;
+            const opacity = (1.2 - Math.sin(toRad(ang + angles.x))) / 2;
 
             // Create the plane itens
             const list: JSX.Element[] = [];
-            for (let k = 1; k <= NUM_EL_PER_PLANE; k++) {
-                const insideAngle = k * (180 / NUM_EL_PER_PLANE - 10);
+            for (let k = 0; k < NUM_EL_PER_PLANE; k++) {
+                const insideAngle = k * (180 / NUM_EL_PER_PLANE) + 90 / NUM_EL_PER_PLANE;
 
                 list.push(
-                    <Styled.SphereEl
-                        key={k}
-                        draggable="false"
-                        planeAngle={0}
-                        opacity={opacity}
-                        insideAngle={insideAngle}
-                    >
-                        <Styled.After opacity={opacity}>{elements[elCount]}</Styled.After>
+                    <Styled.SphereEl key={k} draggable="false" opacity={opacity} insideAngle={insideAngle}>
+                        <Styled.After opacity={opacity} insideAngle={insideAngle} planeAngle={ang}>
+                            {elements[elCount]}
+                        </Styled.After>
                     </Styled.SphereEl>,
                 );
                 elCount++;

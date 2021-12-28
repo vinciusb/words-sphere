@@ -12,10 +12,13 @@ export interface SphereFaceInterface {
     planeAngle: number;
 }
 
-export interface SphereElementInterface extends SphereFaceInterface {
+export interface SphereElementInterface {
+    opacity: number;
     insideAngle: number;
 }
 
 export interface AfterInterface {
     opacity: number;
+    insideAngle: number;
+    planeAngle: number;
 }
